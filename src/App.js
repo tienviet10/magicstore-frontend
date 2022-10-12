@@ -6,6 +6,8 @@ import { CustomNav } from './components/Navbar';
 import { Banner } from './components/Banner';
 import { Icon } from './components/Icon';
 
+//test
+
 function App() {
   return (
     <div className="App">
