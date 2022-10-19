@@ -1,10 +1,10 @@
-
-import './App.css';
 import "bootstrap/dist/css/bootstrap.min.css";
+import "./App.css";
 
-import { CustomNav } from './components/Navbar';
-import { Banner } from './components/Banner';
-import { Icon } from './components/Icon';
+import { Banner } from "./components/Banner";
+import { Icon } from "./components/Icon";
+import { CustomNav } from "./components/Navbar";
+import { TicTacToe } from "./components/TicTacToe";
 
 //test
 
@@ -14,6 +14,7 @@ function App() {
       <CustomNav />
       <Banner />
       <Icon />
+      <TicTacToe />
     </div>
   );
 }
