@@ -3,6 +3,8 @@ import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 
+import React from "react";
+
 const matchAnswer = [
   [0, 1, 2],
   [3, 4, 5],
@@ -14,7 +16,7 @@ const matchAnswer = [
   [2, 4, 6],
 ];
 
-export const TicTacToe = ({ handleShow, setWinner }) => {
+export const TicTacToeOnline = ({ handleShow, setWinner }) => {
   const [marker, setMarker] = useState("O");
   const [playerOne, setPlayerOne] = useState([]);
   const [playerTwo, setPlayerTwo] = useState([]);
@@ -89,7 +91,7 @@ export const TicTacToe = ({ handleShow, setWinner }) => {
 
   return (
     <Container>
-      <Row>Offline game:</Row>
+      <Row>Online game:</Row>
       <Row className="justify-content-md-center">
         <Col className="col-md-1 p-1">
           <button

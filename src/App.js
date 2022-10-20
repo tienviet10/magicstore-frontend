@@ -28,6 +28,7 @@ function App() {
       <CustomNav />
       <Banner />
       <Icon />
+      <br />
       <TicTacToe handleShow={handleShow} setWinner={setWinner} />
       <br />
     </div>
