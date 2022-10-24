@@ -3,6 +3,7 @@ import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 
+import axios from "axios";
 import React from "react";
 
 const matchAnswer = [
@@ -19,8 +20,8 @@ const matchAnswer = [
 export const TicTacToeOnline = ({ handleShow, setWinner }) => {
   const socketRef = useRef(null);
   const marker = useRef("O");
-  const playerOne = useRef([]);
-  const playerTwo = useRef([]);
+  const playerX = useRef([]);
+  const playerO = useRef([]);
   const [markLocation, setMarkLocation] = useState([
     "",
     "",
@@ -33,33 +34,24 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
     "",
   ]);
 
-  const countRef = useRef(0);
-  const countSendRef = useRef(0);
-
   const resetAll = () => {
-    setMarkLocation(["", "", "", "", "", "", "", "", ""]);
-    playerOne.current = [];
-    playerTwo.current = [];
-    marker.current = "O";
+    socketRef.current.send(
+      JSON.stringify({
+        marks: ["", "", "", "", "", "", "", "", ""],
+        playerX: [],
+        playerO: [],
+        marker: "O",
+      })
+    );
   };
 
   useEffect(() => {
     let res = 0;
+
     if (socketRef.current === null) {
+      fetchBoard();
       socketRef.current = new WebSocket("ws://127.0.0.1:8000/");
     }
-    socketRef.current.onopen = (e) => {
-      if (res === 9) {
-        socketRef.current.send(
-          JSON.stringify({
-            marks: ["", "", "", "", "", "", "", "", ""],
-            player1: [],
-            player2: [],
-            marker: "O",
-          })
-        );
-      }
-    };
 
     socketRef.current.onmessage = (e) => {
       const newData = JSON.parse(e.data);
@@ -68,38 +60,43 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
         return (acc += val === "X" || val === "O" ? 1 : 0);
       }, 0);
 
-      playerOne.current = newData["player1"];
-      playerTwo.current = newData["player2"];
+      playerX.current = newData["playerX"];
+      playerO.current = newData["playerO"];
       marker.current = newData["marker"];
       setMarkLocation(newData["marks"]);
 
-      countRef.current = countRef.current + 1;
-      console.log(countRef.current);
+      console.log("res: " + res);
+      console.log("player1: " + playerX.current);
+      console.log("player2: " + playerO.current);
 
-      if (res !== 9) {
-        for (const answer of matchAnswer) {
-          if (
-            playerOne.current.indexOf(answer[0]) > -1 &&
-            playerOne.current.indexOf(answer[1]) > -1 &&
-            playerOne.current.indexOf(answer[2]) > -1
-          ) {
-            setWinner("X");
-            handleShow();
-            resetAll();
-            break;
-          }
-          if (
-            playerTwo.current.indexOf(answer[0]) > -1 &&
-            playerTwo.current.indexOf(answer[1]) > -1 &&
-            playerTwo.current.indexOf(answer[2]) > -1
-          ) {
-            setWinner("O");
-            handleShow();
-            resetAll();
-            break;
-          }
+      let negRes = true;
+
+      for (const answer of matchAnswer) {
+        if (
+          playerX.current.indexOf(answer[0]) > -1 &&
+          playerX.current.indexOf(answer[1]) > -1 &&
+          playerX.current.indexOf(answer[2]) > -1
+        ) {
+          setWinner("X");
+          handleShow();
+          resetAll();
+          negRes = false;
+          break;
         }
-      } else {
+        if (
+          playerO.current.indexOf(answer[0]) > -1 &&
+          playerO.current.indexOf(answer[1]) > -1 &&
+          playerO.current.indexOf(answer[2]) > -1
+        ) {
+          setWinner("O");
+          handleShow();
+          resetAll();
+          negRes = false;
+          break;
+        }
+      }
+
+      if (negRes && res === 9) {
         setWinner("N");
         handleShow();
         resetAll();
@@ -109,16 +106,30 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
     socketRef.current.onerror = (e) => {
       // console.log("error", e);
     };
+
+    socketRef.current.onopen = (e) => {
+      // console.log("open", e);
+    };
   }, [handleShow, setWinner]);
 
-  const sendSocket = (newMarkLocation, player1, player2, marker) => {
-    countSendRef.current = countSendRef.current + 1;
-    console.log("countSendRef: " + countSendRef.current);
+  const fetchBoard = async () => {
+    try {
+      const response = await axios("http://127.0.0.1:8000/tictactoe");
+      playerX.current = response.data["PlayerX"];
+      playerO.current = response.data["PlayerO"];
+      marker.current = response.data["CurrentPlayer"];
+      setMarkLocation(response.data["CurrentBoard"]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const sendSocket = (newMarkLocation, playerX, playerO, marker) => {
     socketRef.current.send(
       JSON.stringify({
         marks: newMarkLocation,
-        player1: player1,
-        player2: player2,
+        playerX: playerX,
+        playerO: playerO,
         marker: marker,
       })
     );
@@ -127,23 +138,23 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
   const setNewMarker = (loc) => {
     if (
       marker.current === "X" &&
-      !playerTwo.current.includes(loc) &&
-      !playerOne.current.includes(loc)
+      !playerO.current.includes(loc) &&
+      !playerX.current.includes(loc)
     ) {
       const newMarkLocation = markLocation.map((value, index) =>
         index === loc ? "X" : value
       );
-      const player1 = [...playerOne.current, loc];
-      sendSocket(newMarkLocation, player1, playerTwo.current, "O");
+      const playerXStore = [...playerX.current, loc];
+      sendSocket(newMarkLocation, playerXStore, playerO.current, "O");
     } else if (
-      !playerOne.current.includes(loc) &&
-      !playerTwo.current.includes(loc)
+      !playerX.current.includes(loc) &&
+      !playerO.current.includes(loc)
     ) {
       const newMarkLocation = markLocation.map((value, index) =>
         index === loc ? "O" : value
       );
-      const player2 = [...playerTwo.current, loc];
-      sendSocket(newMarkLocation, playerOne.current, player2, "X");
+      const playerOStore = [...playerO.current, loc];
+      sendSocket(newMarkLocation, playerX.current, playerOStore, "X");
     }
   };
 
