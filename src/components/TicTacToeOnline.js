@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -17,9 +17,10 @@ const matchAnswer = [
 ];
 
 export const TicTacToeOnline = ({ handleShow, setWinner }) => {
-  const [marker, setMarker] = useState("O");
-  const [playerOne, setPlayerOne] = useState([]);
-  const [playerTwo, setPlayerTwo] = useState([]);
+  const socketRef = useRef(null);
+  const marker = useRef("O");
+  const playerOne = useRef([]);
+  const playerTwo = useRef([]);
   const [markLocation, setMarkLocation] = useState([
     "",
     "",
@@ -32,60 +33,117 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
     "",
   ]);
 
-  useEffect(() => {
-    const resetAll = () => {
-      setMarkLocation(["", "", "", "", "", "", "", "", ""]);
-      setPlayerOne([]);
-      setPlayerTwo([]);
-      setMarker("O");
-    };
-    for (const answer of matchAnswer) {
-      if (
-        playerOne.indexOf(answer[0]) > -1 &&
-        playerOne.indexOf(answer[1]) > -1 &&
-        playerOne.indexOf(answer[2]) > -1
-      ) {
-        setWinner("X");
-        handleShow();
-        resetAll();
-        break;
-      }
-      if (
-        playerTwo.indexOf(answer[0]) > -1 &&
-        playerTwo.indexOf(answer[1]) > -1 &&
-        playerTwo.indexOf(answer[2]) > -1
-      ) {
-        setWinner("O");
-        handleShow();
-        resetAll();
-        break;
-      }
-    }
+  const countRef = useRef(0);
+  const countSendRef = useRef(0);
 
-    if (playerOne.length + playerTwo.length === 9) {
-      setWinner("N");
-      handleShow();
-      resetAll();
+  const resetAll = () => {
+    setMarkLocation(["", "", "", "", "", "", "", "", ""]);
+    playerOne.current = [];
+    playerTwo.current = [];
+    marker.current = "O";
+  };
+
+  useEffect(() => {
+    let res = 0;
+    if (socketRef.current === null) {
+      socketRef.current = new WebSocket("ws://127.0.0.1:8000/");
     }
-  }, [playerOne, playerTwo, handleShow, setWinner]);
+    socketRef.current.onopen = (e) => {
+      if (res === 9) {
+        socketRef.current.send(
+          JSON.stringify({
+            marks: ["", "", "", "", "", "", "", "", ""],
+            player1: [],
+            player2: [],
+            marker: "O",
+          })
+        );
+      }
+    };
+
+    socketRef.current.onmessage = (e) => {
+      const newData = JSON.parse(e.data);
+
+      res = newData["marks"].reduce((acc, val) => {
+        return (acc += val === "X" || val === "O" ? 1 : 0);
+      }, 0);
+
+      playerOne.current = newData["player1"];
+      playerTwo.current = newData["player2"];
+      marker.current = newData["marker"];
+      setMarkLocation(newData["marks"]);
+
+      countRef.current = countRef.current + 1;
+      console.log(countRef.current);
+
+      if (res !== 9) {
+        for (const answer of matchAnswer) {
+          if (
+            playerOne.current.indexOf(answer[0]) > -1 &&
+            playerOne.current.indexOf(answer[1]) > -1 &&
+            playerOne.current.indexOf(answer[2]) > -1
+          ) {
+            setWinner("X");
+            handleShow();
+            resetAll();
+            break;
+          }
+          if (
+            playerTwo.current.indexOf(answer[0]) > -1 &&
+            playerTwo.current.indexOf(answer[1]) > -1 &&
+            playerTwo.current.indexOf(answer[2]) > -1
+          ) {
+            setWinner("O");
+            handleShow();
+            resetAll();
+            break;
+          }
+        }
+      } else {
+        setWinner("N");
+        handleShow();
+        resetAll();
+      }
+    };
+
+    socketRef.current.onerror = (e) => {
+      // console.log("error", e);
+    };
+  }, [handleShow, setWinner]);
+
+  const sendSocket = (newMarkLocation, player1, player2, marker) => {
+    countSendRef.current = countSendRef.current + 1;
+    console.log("countSendRef: " + countSendRef.current);
+    socketRef.current.send(
+      JSON.stringify({
+        marks: newMarkLocation,
+        player1: player1,
+        player2: player2,
+        marker: marker,
+      })
+    );
+  };
 
   const setNewMarker = (loc) => {
     if (
-      marker === "X" &&
-      !playerTwo.includes(loc) &&
-      !playerOne.includes(loc)
+      marker.current === "X" &&
+      !playerTwo.current.includes(loc) &&
+      !playerOne.current.includes(loc)
     ) {
-      setMarker("O");
-      setMarkLocation((locs) =>
-        locs.map((value, index) => (index === loc ? "X" : value))
+      const newMarkLocation = markLocation.map((value, index) =>
+        index === loc ? "X" : value
       );
-      setPlayerOne((loc1) => [...loc1, loc]);
-    } else if (!playerOne.includes(loc) && !playerTwo.includes(loc)) {
-      setMarker("X");
-      setMarkLocation((locs) =>
-        locs.map((value, index) => (index === loc ? "O" : value))
+      const player1 = [...playerOne.current, loc];
+      sendSocket(newMarkLocation, player1, playerTwo.current, "O");
+    } else if (
+      !playerOne.current.includes(loc) &&
+      !playerTwo.current.includes(loc)
+    ) {
+      const newMarkLocation = markLocation.map((value, index) =>
+        index === loc ? "O" : value
       );
-      setPlayerTwo((loc2) => [...loc2, loc]);
+      const player2 = [...playerTwo.current, loc];
+      sendSocket(newMarkLocation, playerOne.current, player2, "X");
     }
   };
 
