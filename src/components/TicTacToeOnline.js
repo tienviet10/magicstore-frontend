@@ -72,7 +72,7 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
 
     if (socketRef.current === null) {
       fetchBoard();
-      socketRef.current = new WebSocket("ws://127.0.0.1:8000/");
+      socketRef.current = new WebSocket("ws://magicstore-api.up.railway.app/");
     }
 
     socketRef.current.onmessage = (e) => {
@@ -97,7 +97,9 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
 
   const fetchBoard = async () => {
     try {
-      const response = await axios("http://127.0.0.1:8000/tictactoe");
+      const response = await axios(
+        "http://magicstore-api.up.railway.app/tictactoe"
+      );
       playerX.current = response.data["PlayerX"];
       playerO.current = response.data["PlayerO"];
       marker.current = response.data["CurrentPlayer"];
