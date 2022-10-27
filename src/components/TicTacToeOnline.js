@@ -34,41 +34,8 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
     "",
   ]);
 
-  const resetAll = () => {
-    socketRef.current.send(
-      JSON.stringify({
-        marks: ["", "", "", "", "", "", "", "", ""],
-        playerX: [],
-        playerO: [],
-        marker: "O",
-      })
-    );
-  };
-
   useEffect(() => {
-    let res = 0;
-
-    if (socketRef.current === null) {
-      fetchBoard();
-      socketRef.current = new WebSocket("ws://127.0.0.1:8000/");
-    }
-
-    socketRef.current.onmessage = (e) => {
-      const newData = JSON.parse(e.data);
-
-      res = newData["marks"].reduce((acc, val) => {
-        return (acc += val === "X" || val === "O" ? 1 : 0);
-      }, 0);
-
-      playerX.current = newData["playerX"];
-      playerO.current = newData["playerO"];
-      marker.current = newData["marker"];
-      setMarkLocation(newData["marks"]);
-
-      console.log("res: " + res);
-      console.log("player1: " + playerX.current);
-      console.log("player2: " + playerO.current);
-
+    const checkResult = (totalLen) => {
       let negRes = true;
 
       for (const answer of matchAnswer) {
@@ -96,11 +63,27 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
         }
       }
 
-      if (negRes && res === 9) {
+      if (negRes && totalLen === 9) {
         setWinner("N");
         handleShow();
         resetAll();
       }
+    };
+
+    if (socketRef.current === null) {
+      fetchBoard();
+      socketRef.current = new WebSocket("ws://127.0.0.1:8000/");
+    }
+
+    socketRef.current.onmessage = (e) => {
+      const newData = JSON.parse(e.data);
+
+      playerX.current = newData["playerX"];
+      playerO.current = newData["playerO"];
+      marker.current = newData["marker"];
+      setMarkLocation(newData["marks"]);
+
+      checkResult(playerX.current.length + playerO.current.length);
     };
 
     socketRef.current.onerror = (e) => {
@@ -122,6 +105,17 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const resetAll = () => {
+    socketRef.current.send(
+      JSON.stringify({
+        marks: ["", "", "", "", "", "", "", "", ""],
+        playerX: [],
+        playerO: [],
+        marker: "O",
+      })
+    );
   };
 
   const sendSocket = (newMarkLocation, playerX, playerO, marker) => {
