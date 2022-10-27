@@ -72,7 +72,7 @@ export const TicTacToeOnline = ({ handleShow, setWinner }) => {
 
     if (socketRef.current === null) {
       fetchBoard();
-      socketRef.current = new WebSocket("ws://magicstore-api.up.railway.app/");
+      socketRef.current = new WebSocket("ws://127.0.0.1:8000/");
     }
 
     socketRef.current.onmessage = (e) => {

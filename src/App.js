@@ -5,7 +5,6 @@ import { Banner } from "./components/Banner";
 import { Icon } from "./components/Icon";
 import { CustomNav } from "./components/Navbar";
 import { TicTacToe } from "./components/TicTacToe";
-import { TicTacToeOnline } from "./components/TicTacToeOnline";
 import { UserConfirmationModal } from "./components/UserConfirmationModal";
 
 //test
@@ -32,8 +31,8 @@ function App() {
       <br />
       <TicTacToe handleShow={handleShow} setWinner={setWinner} />
       <br />
-      <TicTacToeOnline handleShow={handleShow} setWinner={setWinner} />
-      <br />
+      {/* <TicTacToeOnline handleShow={handleShow} setWinner={setWinner} />
+      <br /> */}
     </div>
   );
 }
